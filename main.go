@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -19,7 +20,7 @@ const screenHeight = int32(1000)
 const screenWidth = int32(1000)
 const fov = int(90)
 const fovIter = int(1000)
-const maxView = int(50)
+const maxView = int(200)
 const displayScale = int(15)
 
 func radToDeg(in float64) float64 {
@@ -34,6 +35,12 @@ func disNormal(in1 [2]float64, in2 [2]float64) float64 {
 	diffX := math.Abs(float64(in1[0] - in2[0]))
 	diffY := math.Abs(float64(in1[1] - in2[1]))
 	return float64(math.Sqrt(float64(diffX*diffX) + float64(diffY*diffY)))
+}
+
+func disCor(in1 [2]float64, in2 [2]float64, proc float64) float64 {
+	diffX := math.Abs(float64(in1[0] - in2[0]))
+	diffY := math.Abs(float64(in1[1] - in2[1]))
+	return float64(math.Sqrt(float64(diffX*diffX) + float64(diffY*diffY))) // * math.Cos(degToRad(proc*float64(fov))-math.Pi/4)
 }
 
 func disScale(dis float64) [2]float64 {
@@ -73,14 +80,14 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				currentYFloat -= 0.01
 			}
 			currentY := int(currentYFloat)
-			currentY += int(position[1])
-			tempX := x + int(position[0])
+			currentY += int(math.RoundToEven(position[1]))
+			tempX := x + int(math.RoundToEven(position[0]))
 			if int(tempX) < len((*mapIn)[0]) &&
 				int(currentY) < len(*mapIn) &&
 				int(tempX) > 0 &&
 				int(currentY) > 0 &&
 				(*mapIn)[int(tempX)][currentY] {
-				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentY)}
+				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentYFloat + position[1])}
 			}
 			//fmt.Print("x: ")
 			//fmt.Print(tempX)
@@ -99,14 +106,14 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				currentXFloat -= 0.01
 			}
 			currentX := int(currentXFloat)
-			currentX += int(position[0])
-			tempY := y + int(position[1])
+			currentX += int(math.RoundToEven(position[0]))
+			tempY := y + int(math.RoundToEven(position[1]))
 			if int(currentX) < len((*mapIn)[0]) &&
 				int(tempY) < len(*mapIn) &&
 				int(currentX) > 0 &&
 				int(tempY) > 0 &&
 				(*mapIn)[currentX][int(tempY)] {
-				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentX), float64(tempY)}
+				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentXFloat + position[0]), float64(tempY)}
 			}
 			//fmt.Print("x: ")
 			//fmt.Print(currentX)
@@ -133,7 +140,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(tempX) > 0 &&
 				int(currentY) > 0 &&
 				(*mapIn)[int(tempX)][currentY] {
-				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentY)}
+				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentYFloat + position[1])}
 			}
 			//fmt.Print("x: ")
 			//fmt.Print(tempX)
@@ -159,7 +166,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(currentX) > 0 &&
 				int(tempY) > 0 &&
 				(*mapIn)[currentX][int(tempY)] {
-				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentX), float64(tempY)}
+				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentXFloat + position[0]), float64(tempY)}
 			}
 			//fmt.Print("x: ")
 			//fmt.Print(currentX)
@@ -189,7 +196,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(tempX) > 0 &&
 				int(currentY) > 0 &&
 				(*mapIn)[int(tempX)][currentY] {
-				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentY)}
+				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentYFloat + position[1])}
 			}
 			//fmt.Print("x: ")
 			//fmt.Print(tempX)
@@ -215,7 +222,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(currentX) > 0 &&
 				int(tempY) > 0 &&
 				(*mapIn)[currentX][int(tempY)] {
-				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentX), float64(tempY)}
+				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentXFloat + position[0]), float64(tempY)}
 			}
 			//fmt.Print("x: ")
 			//fmt.Print(currentX)
@@ -245,7 +252,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(tempX) > 0 &&
 				int(currentY) > 0 &&
 				(*mapIn)[int(tempX)][currentY] {
-				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentY)}
+				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentYFloat + position[1])}
 			}
 			//fmt.Print("x: ")
 			//fmt.Print(tempX)
@@ -271,7 +278,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(currentX) > 0 &&
 				int(tempY) > 0 &&
 				(*mapIn)[currentX][int(tempY)] {
-				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentX), float64(tempY)}
+				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentXFloat + position[0]), float64(tempY)}
 			}
 			//fmt.Print("x: ")
 			//fmt.Print(currentX)
@@ -299,9 +306,9 @@ func main() {
 
 	gameMap := [][]bool{}
 
-	for x := 0; x < 200; x++ {
+	for x := 0; x < 2000; x++ {
 		temp := []bool{}
-		for y := 0; y < 200; y++ {
+		for y := 0; y < 2000; y++ {
 			temp = append(temp, false)
 		}
 		gameMap = append(gameMap, temp)
@@ -309,32 +316,48 @@ func main() {
 
 	//gameMap[42][42] = true
 
-	gameMap[49][49] = true
-	gameMap[50][50] = true
-	gameMap[49][50] = true
-	gameMap[50][49] = true
+	//gameMap[49][49] = true
+	//gameMap[50][50] = true
+	//gameMap[49][50] = true
+	//gameMap[50][49] = true
+	for i := 0; i < 2000; i++ {
+		//gameMap[i][1000] = true
+		gameMap[i][i] = true
+	}
 
 	mainPlayer := defaultPlayer()
-	mainPlayer.position[0] = 40
-	mainPlayer.position[1] = 40
+	mainPlayer.position[0] = 970
+	mainPlayer.position[1] = 960
 
+	//for i := 0; i < 200; i++ {
+	//	mainPlayer.position[1] += 0.1
+	//	fmt.Print(mainPlayer.position)
+	//	fmt.Print("\t")
+	//	returnPos := ray(40, mainPlayer.position, &gameMap)
+	//	fmt.Print(returnPos)
+	//	fmt.Print("\t")
+	//	diff := disNormal(mainPlayer.position, returnPos)
+	//	fmt.Print(diff)
+	//	fmt.Print("\n")
+	//}
+
+	fmt.Println(rl.White)
 	rl.InitWindow(screenWidth, screenHeight, "omwtfyb")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
-		mainPlayer.position[1] += 0.01
-		mainPlayer.position[0] += 0.01
+		//mainPlayer.position[1] -= 0.1
+		//mainPlayer.position[0] -= 0.1
+		mainPlayer.rotation -= 2
+
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
 		for i := 0; i < rl.GetScreenWidth(); i++ {
 			currentAngle := mainPlayer.rotation + (float64(i) / float64(rl.GetScreenWidth()) * float64(fov))
 			returnPos := ray(currentAngle, mainPlayer.position, &gameMap)
-			diff := disNormal(mainPlayer.position, returnPos)
-			if diff >= 1.0 {
-				points := disScale(diff)
-				rl.DrawLine(int32(i), int32(points[0]), int32(i), int32(points[1]), rl.White)
-			}
-
+			diff := disCor(mainPlayer.position, returnPos, float64(i)/float64(rl.GetScreenWidth()))
+			points := disScale(diff)
+			rl.DrawLine(int32(i), int32(points[0]), int32(i), int32(points[1]), rl.White)
 		}
 
 		rl.EndDrawing()
