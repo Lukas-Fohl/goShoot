@@ -19,8 +19,8 @@ const screenHeight = int32(1000)
 const screenWidth = int32(1000)
 const fov = int(90)
 const fovIter = int(1000)
-const maxView = int(20)
-const displayScale = int(20)
+const maxView = int(50)
+const displayScale = int(15)
 
 func radToDeg(in float64) float64 {
 	return in * (180.0 / math.Pi)
@@ -309,10 +309,10 @@ func main() {
 
 	//gameMap[42][42] = true
 
-	//gameMap[49][49] = true
+	gameMap[49][49] = true
 	gameMap[50][50] = true
-	gameMap[44][48] = true
-	//gameMap[51][51] = true
+	gameMap[49][50] = true
+	gameMap[50][49] = true
 
 	mainPlayer := defaultPlayer()
 	mainPlayer.position[0] = 40
@@ -322,12 +322,15 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
+		mainPlayer.position[1] += 0.01
+		mainPlayer.position[0] += 0.01
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
-		for i := 0; i < fov; i++ {
-			returnPos := ray(mainPlayer.rotation+float64(i), mainPlayer.position, &gameMap)
+		for i := 0; i < rl.GetScreenWidth(); i++ {
+			currentAngle := mainPlayer.rotation + (float64(i) / float64(rl.GetScreenWidth()) * float64(fov))
+			returnPos := ray(currentAngle, mainPlayer.position, &gameMap)
 			diff := disNormal(mainPlayer.position, returnPos)
-			if diff != 0 {
+			if diff >= 1.0 {
 				points := disScale(diff)
 				rl.DrawLine(int32(i), int32(points[0]), int32(i), int32(points[1]), rl.White)
 			}
