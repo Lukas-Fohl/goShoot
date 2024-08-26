@@ -7,7 +7,7 @@ import (
 )
 
 type player struct {
-	rotation int
+	rotation float64
 	position [2]float64
 }
 
@@ -20,6 +20,7 @@ const screenWidth = int32(1000)
 const fov = int(90)
 const fovIter = int(1000)
 const maxView = int(20)
+const displayScale = int(20)
 
 func radToDeg(in float64) float64 {
 	return in * (180.0 / math.Pi)
@@ -35,18 +36,22 @@ func disNormal(in1 [2]float64, in2 [2]float64) float64 {
 	return float64(math.Sqrt(float64(diffX*diffX) + float64(diffY*diffY)))
 }
 
-func disScale(dis float64) float64 {
-	return 1.0 / (dis / disNormal([2]float64{0.0, 0.0}, [2]float64{float64(maxView), float64(maxView)}))
+func disScale(dis float64) [2]float64 {
+	size := 1.0 / (dis / disNormal([2]float64{0.0, 0.0}, [2]float64{float64(maxView), float64(maxView)}))
+	size = size * float64(displayScale)
+	return [2]float64{float64(screenHeight)/2.0 - size, float64(screenHeight)/2.0 + size}
 }
 
-func ray(angle int, position [2]float64, mapIn *[][]bool) [2]float64 {
+func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 
-	angle = angle % 360
-	for angle < 0 {
-		angle += 360
+	for angle > 360.0 {
+		angle -= 360.0
 	}
-	if angle == 360 {
-		angle = 0
+	for angle < 0.0 {
+		angle += 360.0
+	}
+	if angle == 360.0 {
+		angle = 0.0
 	}
 
 	angleRad := degToRad(float64(angle))
@@ -320,10 +325,11 @@ func main() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
 		for i := 0; i < fov; i++ {
-			returnPos := ray(mainPlayer.rotation+i, mainPlayer.position, &gameMap)
+			returnPos := ray(mainPlayer.rotation+float64(i), mainPlayer.position, &gameMap)
 			diff := disNormal(mainPlayer.position, returnPos)
 			if diff != 0 {
-				rl.DrawLine(int32(i), 0, int32(i), int32(disScale(diff)*20.0), rl.White)
+				points := disScale(diff)
+				rl.DrawLine(int32(i), int32(points[0]), int32(i), int32(points[1]), rl.White)
 			}
 
 		}
@@ -331,3 +337,8 @@ func main() {
 		rl.EndDrawing()
 	}
 }
+
+/*TODO
+change iter --> get new angle
+--> new screen position
+*/
