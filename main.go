@@ -12,6 +12,27 @@ type player struct {
 	position [2]float64
 }
 
+func defaultTextureDesc() textureDesc {
+	return textureDesc{isSet: false, texture: ""}
+}
+
+type textureDesc struct {
+	isSet   bool
+	texture string
+}
+
+func defaultBlock() block {
+	return block{collision: false, floorTexture: defaultTextureDesc(), wallTexture: defaultTextureDesc(), ceilingTexture: defaultTextureDesc(), interaction: false}
+}
+
+type block struct {
+	collision      bool
+	floorTexture   textureDesc
+	wallTexture    textureDesc
+	ceilingTexture textureDesc
+	interaction    bool
+}
+
 func defaultPlayer() player {
 	return player{position: [2]float64{0.0, 0.0}, rotation: 0}
 }
@@ -49,7 +70,11 @@ func disScale(dis float64) [2]float64 {
 	return [2]float64{float64(screenHeight)/2.0 - size, float64(screenHeight)/2.0 + size}
 }
 
-func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
+func playerMove(playerIn *player, mapIn [][]block) {
+	//check for keys --> change rotation + check for collision and move
+}
+
+func ray(angle float64, position [2]float64, mapIn *[][]block) [2]float64 {
 
 	for angle > 360.0 {
 		angle -= 360.0
@@ -80,13 +105,13 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				currentYFloat -= 0.01
 			}
 			currentY := int(currentYFloat)
-			currentY += int(math.RoundToEven(position[1]))
-			tempX := x + int(math.RoundToEven(position[0]))
+			currentY += int(position[1])
+			tempX := x + int(position[0])
 			if int(tempX) < len((*mapIn)[0]) &&
 				int(currentY) < len(*mapIn) &&
 				int(tempX) > 0 &&
 				int(currentY) > 0 &&
-				(*mapIn)[int(tempX)][currentY] {
+				(*mapIn)[int(tempX)][currentY].wallTexture.isSet {
 				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentYFloat + position[1])}
 			}
 			//fmt.Print("x: ")
@@ -106,13 +131,13 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				currentXFloat -= 0.01
 			}
 			currentX := int(currentXFloat)
-			currentX += int(math.RoundToEven(position[0]))
-			tempY := y + int(math.RoundToEven(position[1]))
+			currentX += int(position[0])
+			tempY := y + int(position[1])
 			if int(currentX) < len((*mapIn)[0]) &&
 				int(tempY) < len(*mapIn) &&
 				int(currentX) > 0 &&
 				int(tempY) > 0 &&
-				(*mapIn)[currentX][int(tempY)] {
+				(*mapIn)[currentX][int(tempY)].wallTexture.isSet {
 				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentXFloat + position[0]), float64(tempY)}
 			}
 			//fmt.Print("x: ")
@@ -139,7 +164,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(currentY) < len(*mapIn) &&
 				int(tempX) > 0 &&
 				int(currentY) > 0 &&
-				(*mapIn)[int(tempX)][currentY] {
+				(*mapIn)[int(tempX)][currentY].wallTexture.isSet {
 				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentYFloat + position[1])}
 			}
 			//fmt.Print("x: ")
@@ -165,7 +190,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(tempY) < len(*mapIn) &&
 				int(currentX) > 0 &&
 				int(tempY) > 0 &&
-				(*mapIn)[currentX][int(tempY)] {
+				(*mapIn)[currentX][int(tempY)].wallTexture.isSet {
 				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentXFloat + position[0]), float64(tempY)}
 			}
 			//fmt.Print("x: ")
@@ -195,7 +220,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(currentY) < len(*mapIn) &&
 				int(tempX) > 0 &&
 				int(currentY) > 0 &&
-				(*mapIn)[int(tempX)][currentY] {
+				(*mapIn)[int(tempX)][currentY].wallTexture.isSet {
 				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentYFloat + position[1])}
 			}
 			//fmt.Print("x: ")
@@ -221,7 +246,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(tempY) < len(*mapIn) &&
 				int(currentX) > 0 &&
 				int(tempY) > 0 &&
-				(*mapIn)[currentX][int(tempY)] {
+				(*mapIn)[currentX][int(tempY)].wallTexture.isSet {
 				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentXFloat + position[0]), float64(tempY)}
 			}
 			//fmt.Print("x: ")
@@ -251,7 +276,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(currentY) < len(*mapIn) &&
 				int(tempX) > 0 &&
 				int(currentY) > 0 &&
-				(*mapIn)[int(tempX)][currentY] {
+				(*mapIn)[int(tempX)][currentY].wallTexture.isSet {
 				blockMap[disNormal(position, [2]float64{float64(currentY), float64(tempX)})] = [2]float64{float64(tempX), float64(currentYFloat + position[1])}
 			}
 			//fmt.Print("x: ")
@@ -277,7 +302,7 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 				int(tempY) < len(*mapIn) &&
 				int(currentX) > 0 &&
 				int(tempY) > 0 &&
-				(*mapIn)[currentX][int(tempY)] {
+				(*mapIn)[currentX][int(tempY)].wallTexture.isSet {
 				blockMap[disNormal(position, [2]float64{float64(currentX), float64(tempY)})] = [2]float64{float64(currentXFloat + position[0]), float64(tempY)}
 			}
 			//fmt.Print("x: ")
@@ -304,12 +329,12 @@ func ray(angle float64, position [2]float64, mapIn *[][]bool) [2]float64 {
 
 func main() {
 
-	gameMap := [][]bool{}
+	gameMap := [][]block{}
 
 	for x := 0; x < 2000; x++ {
-		temp := []bool{}
+		temp := []block{}
 		for y := 0; y < 2000; y++ {
-			temp = append(temp, false)
+			temp = append(temp, defaultBlock())
 		}
 		gameMap = append(gameMap, temp)
 	}
@@ -321,8 +346,8 @@ func main() {
 	//gameMap[49][50] = true
 	//gameMap[50][49] = true
 	for i := 0; i < 2000; i++ {
-		//gameMap[i][1000] = true
-		gameMap[i][i] = true
+		gameMap[i][2000-1-i].wallTexture.isSet = true
+		gameMap[i][i].wallTexture.isSet = true
 	}
 
 	mainPlayer := defaultPlayer()
@@ -346,6 +371,8 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 	for !rl.WindowShouldClose() {
+		//blocksSeen := []block{}
+
 		//mainPlayer.position[1] -= 0.1
 		//mainPlayer.position[0] -= 0.1
 		mainPlayer.rotation -= 2
@@ -365,6 +392,23 @@ func main() {
 }
 
 /*TODO
-change iter --> get new angle
---> new screen position
+fix movement
+	into function
+	check for rotation
+	check rotation
+save seen block in on frame (in ray)
+	--> floor and seeling
+	block that got hit
+	--> coords for entry and exit
+	--> calc dis then height for them
+	--> map texture for space
+	--> draw
+block from bool to struct
+	col?
+	wall - texture?
+	floor - texture?
+	seeling - texture?
+	interaction?
+texture for block
+	--> draw as pixels
 */
