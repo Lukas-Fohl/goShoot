@@ -22,15 +22,21 @@ type textureDesc struct {
 }
 
 func defaultBlock() block {
-	return block{collision: false, floorTexture: defaultTextureDesc(), wallTexture: defaultTextureDesc(), ceilingTexture: defaultTextureDesc(), interaction: false}
+	return block{collision: false, floorTexture: defaultTextureDesc(), wallTexture: defaultTextureDesc(), ceilingTexture: defaultTextureDesc(), interaction: normal}
 }
+
+type blockType int
+
+const (
+	normal blockType = iota
+)
 
 type block struct {
 	collision      bool
 	floorTexture   textureDesc
 	wallTexture    textureDesc
 	ceilingTexture textureDesc
-	interaction    bool
+	interaction    blockType
 }
 
 func defaultPlayer() player {
@@ -59,9 +65,7 @@ func disNormal(in1 [2]float64, in2 [2]float64) float64 {
 }
 
 func disCor(in1 [2]float64, in2 [2]float64, proc float64) float64 {
-	diffX := math.Abs(float64(in1[0] - in2[0]))
-	diffY := math.Abs(float64(in1[1] - in2[1]))
-	return float64(math.Sqrt(float64(diffX*diffX) + float64(diffY*diffY))) // * math.Cos(degToRad(proc*float64(fov))-math.Pi/4)
+	return float64(disNormal(in1, in2) * math.Cos(degToRad(math.Sin(proc)*float64(fov))-math.Pi/4)) // * math.Cos(degToRad(proc*float64(fov))-math.Pi/4)
 }
 
 func disScale(dis float64) [2]float64 {
@@ -70,12 +74,54 @@ func disScale(dis float64) [2]float64 {
 	return [2]float64{float64(screenHeight)/2.0 - size, float64(screenHeight)/2.0 + size}
 }
 
-func playerMove(playerIn *player, mapIn [][]block) {
+func playerMove(playerIn *player, mapIn *[][]block) {
+	currentRotation := playerIn.rotation
+	move := false
+	switch true {
+	case rl.IsKeyDown(rl.KeyS):
+		move = true
+		currentRotation += 180
+		break
+	case rl.IsKeyDown(rl.KeyW):
+		move = true
+		break
+	case rl.IsKeyDown(rl.KeyD):
+		move = true
+		currentRotation -= 90
+		break
+	case rl.IsKeyDown(rl.KeyA):
+		move = true
+		currentRotation += 90
+		break
+	case rl.IsKeyDown(rl.KeyLeft):
+		playerIn.rotation -= 1
+		break
+	case rl.IsKeyDown(rl.KeyRight):
+		playerIn.rotation += 1
+		break
+	default:
+		move = false
+		break
+	}
+	currentRotation = normRotationDeg(currentRotation)
+
+	tempPositionX := 0.0
+	tempPositionY := 0.0
+
+	if move {
+		tempPositionX += math.Sin(currentRotation * math.Pi / 180.0)
+		tempPositionY += math.Cos(currentRotation * math.Pi / 180.0)
+	}
+	if (*mapIn)[int(tempPositionX)][int(tempPositionY)].collision {
+		return
+	}
+	playerIn.position[0] = tempPositionX
+	playerIn.position[1] = tempPositionY
+
 	//check for keys --> change rotation + check for collision and move
 }
 
-func ray(angle float64, position [2]float64, mapIn *[][]block) [2]float64 {
-
+func normRotationDeg(angle float64) float64 {
 	for angle > 360.0 {
 		angle -= 360.0
 	}
@@ -85,6 +131,12 @@ func ray(angle float64, position [2]float64, mapIn *[][]block) [2]float64 {
 	if angle == 360.0 {
 		angle = 0.0
 	}
+	return angle
+}
+
+func ray(angle float64, position [2]float64, mapIn *[][]block) [2]float64 {
+
+	angle = normRotationDeg(angle)
 
 	angleRad := degToRad(float64(angle))
 
@@ -373,14 +425,15 @@ func main() {
 	for !rl.WindowShouldClose() {
 		//blocksSeen := []block{}
 
-		//mainPlayer.position[1] -= 0.1
-		//mainPlayer.position[0] -= 0.1
-		mainPlayer.rotation -= 2
+		//mainPlayer.position[1] += 1
+		//mainPlayer.position[0] += 1
+		playerMove(&mainPlayer, &gameMap)
+		//mainPlayer.rotation += 2
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
 		for i := 0; i < rl.GetScreenWidth(); i++ {
-			currentAngle := mainPlayer.rotation + (float64(i) / float64(rl.GetScreenWidth()) * float64(fov))
+			currentAngle := mainPlayer.rotation + (float64(i)/float64(rl.GetScreenWidth()))*(float64(fov))/2.0
 			returnPos := ray(currentAngle, mainPlayer.position, &gameMap)
 			diff := disCor(mainPlayer.position, returnPos, float64(i)/float64(rl.GetScreenWidth()))
 			points := disScale(diff)
